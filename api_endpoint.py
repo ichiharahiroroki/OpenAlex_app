@@ -5,6 +5,7 @@ from typing import List
 from pydantic import BaseModel
 from typing import Optional
 from services.create_author_id_list import CreateAuthorIdList
+from utils.common_method import count_logical_cores
 
 app = FastAPI(title="Author Information API")
 
@@ -23,13 +24,16 @@ class RequestData(BaseModel):
 # エンドポイント: データを受け取って処理
 @app.post("/count_japanese/")
 async def process_count_japanese(request_data: RequestData):
-    #creater = CreateAuthorIdList(topic_ids=["T10966"],primary=True,threshold=15,year_threshold=2010,title_and_abstract_search='("novel target" OR "new target" OR "therapeutic target")')
+    count_cores = count_logical_cores()
+    max_works = count_cores*2
+    print(max_works)
     creater = CreateAuthorIdList(
         topic_ids=request_data.topic_id,
         primary=request_data.primary,  # 固定値
         threshold=request_data.citation_count,
         year_threshold=request_data.publication_year,
-        title_and_abstract_search=request_data.title_and_abstract_search
+        title_and_abstract_search=request_data.title_and_abstract_search,
+        max_works = max_works
     )
 
     creater.run_get_works()
@@ -39,4 +43,8 @@ async def process_count_japanese(request_data: RequestData):
         "count_works": len(creater.all_results),
         "count_japanese_auhtors": len(creater.authors_id_list)
     }
+    
+@app.get("/")
+async def read_root():
+    return {"message": "Welcome to the Author Information API"}
     

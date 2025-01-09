@@ -1,7 +1,11 @@
 import requests
 
 # APIのエンドポイントURL
-url = "http://127.0.0.1:8000/count_japanese/"
+#http://127.0.0.1:8000/
+
+#url = "http://127.0.0.1:8000/count_japanese/"
+
+url ="  http://44.211.68.239:8000/count_japanese/"
 
 # 送信するデータ
 data = {
