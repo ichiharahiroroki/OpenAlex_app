@@ -1,0 +1,212 @@
+import os, sys; sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
+import requests
+import math
+from concurrent.futures import ThreadPoolExecutor
+import time
+from utils.common_method import extract_id_from_url
+from collections import Counter
+
+#取得したデータの順番について調べる。（paramsにソート順を指定した方がいいのか？）
+
+class OpenAlexPagenationDataFetcher:
+    
+    def __init__(self,endpoint_url, params,id,max_workers,only_japanese,correspondingR=False,create_keywords_dict=False):
+        self.max_workers =  max_workers
+        self.endpoint_url = endpoint_url
+        self.params = params
+        id = extract_id_from_url(id)
+        self.id=id.upper()
+        self.only_japanese = only_japanese
+        self.correspondingR = correspondingR
+        self.correspondingR_results = []
+        self.meta, self.all_results = self.meta_data_getter()
+        if self.meta or self.all_results: 
+            if params["per_page"] and self.meta.get('count') <= params["per_page"]:
+                pass
+                #print("１回目で終了")
+            else:
+                if self.meta.get('count')<10000:
+                    print("オフセット")
+                    self.all_results.extend(self.fetch_all_data_with_offset_pagination())
+                else:
+                    print("カーソル")
+                    self.all_results.extend(self.fetch_all_data_with_cursor_pagination())
+            
+            if correspondingR:
+                self.correspondingR_results = self.correspondingR_extracter()
+        
+            if create_keywords_dict:
+                keyword_counter = Counter()
+                for work in self.all_results:
+                    keywords = [keyword.get("display_name") for keyword in work.get("keywords", []) if keyword.get("display_name") != "N/A"]
+                    keyword_counter.update(keywords)
+                self.keywords_dict = dict(keyword_counter)
+            
+
+    def meta_data_getter(self):
+        
+        retrial_num=0
+        while True:
+            try:
+                response = requests.get(self.endpoint_url, params=self.params,timeout=5)
+                if response.status_code == 200:  
+                    data = response.json()
+                    # メタデータの表示
+                    meta_data = "\n".join([f"{key}: {value}" for key, value in data.get("meta", {}).items()])
+                    print(f"id:{self.id}\nMeta Data:\n{meta_data}") 
+                    if not self.only_japanese:
+                        return data.get("meta", {}) ,data.get("results",[])
+                    else:
+                        return data.get("meta", {}),self.extract_japanese(data.get("results",[]))
+                
+                else:
+                    retrial_num+=1
+                    time.sleep(retrial_num) 
+                    print("meta_data_getter retrial_num:",retrial_num,"id:",self.id)   
+                    if retrial_num>8:
+                        print("データなしと見なす")
+                        return {},[]
+                         
+            except requests.exceptions.Timeout:
+                print("リクエストがタイムアウトしました。再試行します。")
+            except:
+                print("サーバーから遮断されたので5秒休憩します。")
+                time.sleep(5)
+            
+        # オフセットページネーションを使って並列処理をし、全ての結果を取得する関数　　#params['page']はこの関数の中で設定されている。
+    def fetch_all_data_with_offset_pagination(self):
+        all_results = []
+        count = self.meta.get("count")
+        per_page = self.meta.get("per_page")
+        total_pages = math.ceil(count / per_page) + 1
+
+        # 各ページのデータを並列処理で取得
+        def execute_for_page(page):
+            retrial_num=0
+            while True:
+                try:
+                    copied_params = self.params.copy()
+                    copied_params["page"] = page
+                    response = requests.get(self.endpoint_url, params=copied_params,timeout=5)
+                    if response.status_code == 200:
+                        data = response.json()
+                        print(f"Fetched page {page} with {len(data['results'])} results.")
+                        if not self.only_japanese:
+                            return page, data.get("results", [])  # ページ番号とデータを返す
+                        else:
+                            return page,self.extract_japanese(data.get("results",[]))       
+                    #else:
+                        #print(f"Failed to fetch data for page {page}. Status Code: {response.status_code}")
+                        #return page, []  # ページ番号と空リストを返す
+                    
+                    retrial_num+=1
+                    time.sleep(retrial_num)
+                    if retrial_num>2:
+                        print("fetch_all_data_with_offset_pagination retrial_num:",retrial_num,"id:",self.id)
+                
+                except requests.exceptions.Timeout:
+                    print("リクエストがタイムアウトしました。再試行します。")
+                
+                except:
+                    print("サーバーから遮断されたので5秒休憩します。")
+                    time.sleep(5)
+                    
+                
+        with ThreadPoolExecutor(max_workers = self.max_workers) as executor:
+            pages_data = list(executor.map(execute_for_page, range(2, total_pages)))
+
+        # ページ番号順にソートしてall_resultsに追加
+        for _, data in sorted(pages_data, key=lambda x: x[0]):  # ページ番号でソート
+            all_results.extend(data)
+
+        return all_results
+
+    #カーソルページネーション
+    def fetch_all_data_with_cursor_pagination(self):
+        all_results = []
+        page = 1
+        params = self.params.copy()
+        del params["page"]
+        cursor = "*"
+        
+        retrial_num=0
+        while cursor:
+            # APIのパラメータでURL形式のトピックIDをそのまま使用し、カーソルページネーションを指定
+            params["cursor"] = cursor
+            
+            while True:
+                try:
+                    response = requests.get(self.endpoint_url, params=params,timeout=5)
+                    if response.status_code == 200:
+                        data = response.json()
+                        print(f"Fetched page {page} with {len(data['results'])} results.")
+                        results = data.get("results", [])
+                        # 結果をall_resultsに追加
+                        all_results.extend(results)
+                        break
+                    
+                    retrial_num+=1
+                    time.sleep(retrial_num)
+                    if retrial_num>2:
+                        print("fetch_all_data_with_cursor_pagination retrial_num:",retrial_num,"id:",self.id)
+                
+                except requests.exceptions.Timeout:
+                    print("リクエストがタイムアウトしました。再試行します。")    
+                
+                except:
+                    print("サーバーから遮断されたので5秒休憩します。")
+                    time.sleep(5)
+                
+            #print(f"Failed to fetch data. Status Code: {response.status_code}")
+            if len(data['results']) < params["per_page"]:
+                break
+
+            # 次のカーソルを取得してループを継続（最後のページでcursorがnullになる）
+            cursor = data.get("meta", {}).get("next_cursor", None)
+            page += 1
+
+        if not self.only_japanese:
+            return all_results
+        else:
+            return self.extract_japanese(all_results)
+            
+    
+    def correspondingR_extracter(self):
+        correspondingR_results = []
+        for result in self.all_results:
+            for author in result.get("authorships", []):
+                if self.id.upper() in author.get("author", {}).get("id", "N/A"): 
+                    if author.get("is_corresponding", False):
+                        correspondingR_results.append(result)    
+                    elif "last" in author.get('author_position', 'N/A'):
+                        correspondingR_results.append(result)
+                    break
+                
+        return correspondingR_results
+            
+        
+    def extract_japanese(self,results_list):
+        japanese_results_list =[]
+        for result in results_list:
+            if self.author_JP_checker(result):
+                japanese_results_list.append(result)
+        return japanese_results_list
+                 
+    def author_JP_checker(self,data):
+        for authorship in data.get("authorships", []):
+            for institution in authorship.get("institutions", []):
+                if institution.get("country_code") == "JP":
+                    return True
+        return False
+ 
+        
+if __name__ == "__main__":
+    author_id = "https://openalex.org/A5063724667"
+ 
+    endpoint_url= "https://api.openalex.org/works"
+    params={
+        "filter": f"author.id:{author_id},type_crossref:journal-article",
+        "per_page":200
+    }
+    fetcher = OpenAlexPagenationDataFetcher(endpoint_url, params,id=author_id,max_workers=10,only_japanese=False,correspondingR=True,create_keywords_dict=True)
+    print(len(fetcher.keywords_dict))

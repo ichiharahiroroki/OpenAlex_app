@@ -1,0 +1,121 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
+
+import time
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from api.list_openAlex_fetcher import OpenAlexPagenationDataFetcher
+
+class CreateAuthorIdList:
+    def __init__(self,topic_ids,primary,threshold,year_threshold,title_and_abstract_search,max_works=12):
+        self.all_results =[]
+        self.authors_id_list =[]
+        self.topic_ids = topic_ids
+        self.max_works=max_works
+        self.endpoint_url = "https://api.openalex.org/works"
+        # しきい値などの条件を設定してデータを取得
+        self.work_type = "article"
+        self.per_page = 200  # 1ページあたりの取得数
+        self.page = 1
+        self.threshold = threshold #最低引用件数
+        self.year_threshold = year_threshold #以降の年   
+        self.title_and_abstract_search = title_and_abstract_search
+        self.primary = primary
+        self.researcher_rows=[]
+        self.lock = threading.Lock()  # ロックを初期化
+        
+        if len(self.topic_ids) <=1:
+            self.max_workers=max_works
+        elif len(self.topic_ids) ==2:
+            self.max_workers=max_works//2
+        elif len(self.topic_ids) ==3:
+            self.max_workers=max_works//3
+        else:
+            self.max_workers=max_works//4
+            
+        
+    def run_get_works(self): 
+        #topicがある場合
+        if len(self.topic_ids)>0:
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                results = executor.map(self.process_by_topic, self.topic_ids)
+                for result in results:
+                    if result:  # 結果が存在する場合のみ追加
+                        with self.lock:  # ロックを使って排他制御
+                            self.all_results.extend(result)
+        #topicがない場合
+        else:
+            filter_value = f"cited_by_count:>{self.threshold},publication_year:>{self.year_threshold},type:{self.work_type},title_and_abstract.search:{self.title_and_abstract_search}"
+            params = {
+                "filter":filter_value,
+                "page": self.page, 
+                "per_page": self.per_page    
+            }
+            fetcher = OpenAlexPagenationDataFetcher(self.endpoint_url,params,self.title_and_abstract_search,max_workers = self.max_works,only_japanese=True)
+            self.all_results.extend(fetcher.all_results) 
+
+    
+    def extract_authors(self, only_japanese=False):
+        # 一時的なリストを用意
+        temp_authors_id_list = []
+        
+        for result in self.all_results:
+            authors_list = result.get("authorships", [])
+            for author in authors_list:
+                author_id = author.get('author', {}).get('id', 'N/A')
+                if only_japanese:       
+                    countries = author.get('countries', [])
+                    if "JP" in countries:
+                        temp_authors_id_list.append(author_id)
+                else:
+                    temp_authors_id_list.append(author_id)
+        
+        # 重複を削除してself.authors_id_listに格納
+        self.authors_id_list = list(set(temp_authors_id_list))
+
+    def process_by_topic(self, topic_id):
+        #print('Processing topic_id:', topic_id)
+        # 条件に応じてfilterの内容を分岐させる
+        if self.primary:
+            filter_value = f"primary_topic.id:{topic_id},cited_by_count:>{self.threshold},publication_year:>{self.year_threshold},type:{self.work_type},title_and_abstract.search:{self.title_and_abstract_search}"
+        else:
+            filter_value = f"topics.id:{topic_id},cited_by_count:>{self.threshold},publication_year:>{self.year_threshold},type:{self.work_type},title_and_abstract.search:{self.title_and_abstract_search}"
+
+        params = {
+            "filter":filter_value,
+            "page": self.page, 
+            "per_page": self.per_page
+            
+        }
+   
+        fetcher = OpenAlexPagenationDataFetcher(self.endpoint_url,params,topic_id,max_workers =self.max_workers,only_japanese=True)
+        try:
+            return fetcher.all_results  # 成功した場合は結果を返す
+        except Exception as e:
+            print(f"Failed to add results for topic_id {topic_id}: {e}")
+            return []
+        
+    
+if __name__ == "__main__":
+
+
+    # 開始時間を記録
+    start_time = time.time()
+    
+    creater = CreateAuthorIdList(topic_ids=["T10966","T10966","T10966","T10966"],primary=True,threshold=10,year_threshold=2010,title_and_abstract_search='')#("novel target" OR "new target" OR "therapeutic target")
+    creater.run_get_works()
+    print(len(creater.all_results))
+    print(len(creater.authors_id_list))
+    
+    creater.extract_authors(only_japanese=True)
+    print(len(creater.authors_id_list))
+    
+    # 終了時間を記録
+    end_time = time.time()
+    # 処理時間を計算
+    elapsed_time = end_time - start_time
+    print(f"処理時間: {elapsed_time:.2f} 秒")
+
