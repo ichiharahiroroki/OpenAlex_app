@@ -11,6 +11,8 @@ from collections import Counter
 class OpenAlexPagenationDataFetcher:
     
     def __init__(self,endpoint_url, params,id,max_workers,only_japanese,correspondingR=False,create_keywords_dict=False):
+        
+        self.output_log =True
         self.max_workers =  max_workers
         self.endpoint_url = endpoint_url
         self.params = params
@@ -20,6 +22,8 @@ class OpenAlexPagenationDataFetcher:
         self.correspondingR = correspondingR
         self.correspondingR_results = []
         self.meta, self.all_results = self.meta_data_getter()
+        
+        
         if self.meta or self.all_results: 
             if params["per_page"] and self.meta.get('count') <= params["per_page"]:
                 pass
@@ -53,7 +57,7 @@ class OpenAlexPagenationDataFetcher:
                     data = response.json()
                     # メタデータの表示
                     meta_data = "\n".join([f"{key}: {value}" for key, value in data.get("meta", {}).items()])
-                    #print(f"id:{self.id}\nMeta Data:\n{meta_data}") 
+                    self.print_log(f"id:{self.id}\nMeta Data:\n{meta_data}")
                     if not self.only_japanese:
                         return data.get("meta", {}) ,data.get("results",[])
                     else:
@@ -62,7 +66,7 @@ class OpenAlexPagenationDataFetcher:
                 else:
                     retrial_num+=1
                     time.sleep(retrial_num) 
-                    print("meta_data_getter retrial_num:",retrial_num,"id:",self.id)   
+                    self.print_log(f"meta_data_getter retrial_num:{retrial_num},id:{self.id}")   
                     if retrial_num>8:
                         print("データなしと見なす")
                         return {},[]
@@ -70,8 +74,8 @@ class OpenAlexPagenationDataFetcher:
             except requests.exceptions.Timeout:
                 print("リクエストがタイムアウトしました。再試行します。")
             except:
-                print("サーバーから遮断されたので5秒休憩します。")
-                time.sleep(5)
+                print("サーバーから遮断されたので1秒休憩します。")
+                time.sleep(1)
             
         # オフセットページネーションを使って並列処理をし、全ての結果を取得する関数　　#params['page']はこの関数の中で設定されている。
     def fetch_all_data_with_offset_pagination(self):
@@ -90,7 +94,7 @@ class OpenAlexPagenationDataFetcher:
                     response = requests.get(self.endpoint_url, params=copied_params,timeout=5)
                     if response.status_code == 200:
                         data = response.json()
-                        #print(f"Fetched page {page} with {len(data['results'])} results.")
+                        self.print_log(f"Fetched page {page} with {len(data['results'])} results.")
                         if not self.only_japanese:
                             return page, data.get("results", [])  # ページ番号とデータを返す
                         else:
@@ -101,15 +105,14 @@ class OpenAlexPagenationDataFetcher:
                     
                     retrial_num+=1
                     time.sleep(retrial_num)
-                    if retrial_num>2:
-                        print("fetch_all_data_with_offset_pagination retrial_num:",retrial_num,"id:",self.id)
+                    self.print_log("fetch_all_data_with_offset_pagination retrial_num:",retrial_num,"id:",self.id)
                 
                 except requests.exceptions.Timeout:
                     print("リクエストがタイムアウトしました。再試行します。")
                 
                 except:
-                    print("サーバーから遮断されたので5秒休憩します。")
-                    time.sleep(5)
+                    print("サーバーから遮断されたので1秒休憩します。")
+                    time.sleep(1)
                     
                 
         with ThreadPoolExecutor(max_workers = self.max_workers) as executor:
@@ -154,8 +157,8 @@ class OpenAlexPagenationDataFetcher:
                     print("リクエストがタイムアウトしました。再試行します。")    
                 
                 except:
-                    print("サーバーから遮断されたので5秒休憩します。")
-                    time.sleep(5)
+                    print("サーバーから遮断されたので1秒休憩します。")
+                    time.sleep(1)
                 
             #print(f"Failed to fetch data. Status Code: {response.status_code}")
             if len(data['results']) < params["per_page"]:
@@ -198,15 +201,27 @@ class OpenAlexPagenationDataFetcher:
                 if institution.get("country_code") == "JP":
                     return True
         return False
- 
+    
+    def print_log(self,text):
+        try:
+            if self.output_log:
+                print(text)
+        except Exception as e:
+            print(e)
         
 if __name__ == "__main__":
-    author_id = "https://openalex.org/A5063724667"
+    # author_id = "https://openalex.org/A5063724667"
  
     endpoint_url= "https://api.openalex.org/works"
+    # params={
+    #     "filter": f"author.id:{author_id},type_crossref:journal-article",
+    #     "per_page":200
+    # }
     params={
-        "filter": f"author.id:{author_id},type_crossref:journal-article",
-        "per_page":200
+       "filter": "primary_topic.id:T10966,cited_by_count:>100",
+       "page": 1,
+       "per_page": 200,
     }
-    fetcher = OpenAlexPagenationDataFetcher(endpoint_url, params,id=author_id,max_workers=10,only_japanese=False,correspondingR=True,create_keywords_dict=True)
+    
+    fetcher = OpenAlexPagenationDataFetcher(endpoint_url, params,id="aaaaaa",max_workers=12,only_japanese=False,correspondingR=True,create_keywords_dict=True)
     print(len(fetcher.keywords_dict))

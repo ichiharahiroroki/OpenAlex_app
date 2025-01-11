@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # 開始時間を記録
     start_time = time.time()
     
-    creater = CreateAuthorIdList(topic_ids=["T10966","T10966","T10966","T10966"],primary=True,threshold=10,year_threshold=2010,title_and_abstract_search='')#("novel target" OR "new target" OR "therapeutic target")
+    creater = CreateAuthorIdList(topic_ids=["T10966","T10966","T10966","T10966"],primary=True,threshold=10,year_threshold=2010,title_and_abstract_search='',max_works=16)#("novel target" OR "new target" OR "therapeutic target")
     creater.run_get_works()
     print(len(creater.all_results))
     print(len(creater.authors_id_list))
