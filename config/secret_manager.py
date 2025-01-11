@@ -43,6 +43,12 @@ class SecretManager:
             return None
         
 
+from botocore.exceptions import ClientError
+
+
+
+    # Your code goes here.
+    
 # # この部分で実験的にコードを動かす
 # if __name__ == "__main__":
 #     secret_manager = SecretManager()

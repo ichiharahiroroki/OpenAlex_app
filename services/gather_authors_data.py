@@ -24,12 +24,12 @@ class GatherAuthorData:
         if not self.found_date:
             endpoint_url = "https://api.openalex.org/works" 
             
-            params = {#type_crossref: "journal-article" #publication_date:"2018-02-13"#cited_by_count:>20#type_crossref:journal-article
-                "filter": f'author.id:{self.author_id}',#,publication_date:<{found_date}',#,publication_date:<{found_date}>,#type:article',#type:article,publication_year:2006',#,type:"article"
+            params = {
+                "filter": f'author.id:{self.author_id}', #publication_date:<{found_date}>,#type:article',publication_year:2006'
                 "page": 1,
                 "per_page": 200,
                 # "mailto":"ichiharabox@gmail.com"
-            }
+            }#type_crossref: "journal-article" #publication_date:"2018-02-13"#cited_by_count:>20#type_crossref:journal-article
             
             fetcher = OpenAlexPagenationDataFetcher(endpoint_url, params, self.author_id, max_workers=self.max_workers, only_japanese=False, correspondingR=False)
             _, self.article_dict_list = OpenAlexResultParser.works_dict_list_from_works_results(fetcher.all_results)
@@ -53,16 +53,17 @@ class GatherAuthorData:
                         print(f"{article['ID']} の処理中にエラーが発生しました#D-indexとimpactの計算: {exc}")
        
    
-    def gathering_author_data(self):
+    def gathering_author_data(self,get_type_counts_info=False):
         author_dict_list = OpenAlexResultParser.author_dict_list_from_article_dict_list(self.article_dict_list, only_single_author_id=self.author_id)
         authorWoorkData_list = author_dict_list_to_author_work_data_list(author_dict_list)
         profile = create_author_profile(authorWoorkData_list)
         
-        # type_crossref_dict = get_type_counts(self.author_id,type="type_crossref",found_date=self.found_date)
-        # type_dict = get_type_counts(self.author_id,type="type",found_date=self.found_date)
-        # profile.article_type_crossref_dict = type_crossref_dict
-        # profile.article_type_dict = type_dict
-        
+        if get_type_counts_info:
+            type_crossref_dict = get_type_counts(self.author_id,type="type_crossref",found_date=self.found_date)
+            type_dict = get_type_counts(self.author_id,type="type",found_date=self.found_date)
+            profile.article_type_crossref_dict = type_crossref_dict
+            profile.article_type_dict = type_dict
+            
         #profileデータ→辞書
         profile_dict = profile.to_dict()
         
@@ -150,7 +151,7 @@ class GatherAuthorData:
         
    
     
-    
+
 if __name__ == "__main__":
     
     secret = SecretManager()
@@ -159,11 +160,11 @@ if __name__ == "__main__":
     # 開始時間を記録
     start_time = time.time()
 
-    author = GatherAuthorData(author_id="https://openalex.org/A5091245889")
+    author = GatherAuthorData(author_id="https://openalex.org/authors/A5038138665")
     author.run_fetch_works()
     print(len(author.article_dict_list))
     #author.di_calculation(max_workers=16)
-    profile_dict = author.gathering_author_data()
+    profile_dict = author.gathering_author_data(True)
     works_data = author.get_top_three_article()
     
     #profile辞書＋top_three_article

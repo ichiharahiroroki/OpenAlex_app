@@ -6,26 +6,33 @@ import os
 
 class SpreadsheetManager:
     def __init__(self, spreadsheet_name, worksheet_name):
-        # 認証情報ファイルのパス
-        base_dir = os.path.dirname(os.path.dirname(__file__))  # スクリプトのディレクトリを取得
-        base_dir = f"{base_dir}/config"
-        GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-        self.service_account_file = os.path.join(base_dir, GOOGLE_APPLICATION_CREDENTIALS)
-        # 必要なスコープ
-        self.scopes = [
-            'https://www.googleapis.com/auth/spreadsheets',
-            'https://www.googleapis.com/auth/drive'
-        ]
-        # 認証情報の生成
-        self.creds = Credentials.from_service_account_file(
-            self.service_account_file,
-            scopes=self.scopes
-        )
-        # gspreadクライアントの生成
-        self.client = gspread.authorize(self.creds)
-        # スプレッドシートとワークシートを開く
-        self.sheet = self.client.open(spreadsheet_name).worksheet(worksheet_name)
-
+        try:
+            # 認証情報ファイルのパス
+            base_dir = os.path.dirname(os.path.dirname(__file__))  # スクリプトのディレクトリを取得
+            base_dir = f"{base_dir}/config"
+            GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+            self.service_account_file = os.path.join(base_dir, GOOGLE_APPLICATION_CREDENTIALS)
+            # 必要なスコープ
+            self.scopes = [
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive'
+            ]
+            # 認証情報の生成
+            self.creds = Credentials.from_service_account_file(
+                self.service_account_file,
+                scopes=self.scopes
+            )
+            # gspreadクライアントの生成
+            self.client = gspread.authorize(self.creds)
+            try: # スプレッドシートとワークシートを開く
+                self.sheet = self.client.open(spreadsheet_name).worksheet(worksheet_name)
+            except gspread.WorksheetNotFound as e:
+                # Worksheetが見つからない場合に例外をスロー
+                raise ValueError(f"Worksheet '{worksheet_name}' not found in spreadsheet '{spreadsheet_name}'.") from e
+        
+        except Exception as e: # その他のエラーをキャッチして再スロー
+            raise RuntimeError(f"Failed to initialize SpreadsheetManager: {e}") from e
+            
     # ここに他の操作を追加するメソッドを定義できます
     def get_all_values(self):
         """1行目（ヘッダー行）を除外してすべての値を取得する"""

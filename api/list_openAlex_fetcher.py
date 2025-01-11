@@ -26,10 +26,10 @@ class OpenAlexPagenationDataFetcher:
                 #print("１回目で終了")
             else:
                 if self.meta.get('count')<10000:
-                    print("オフセット")
+                    #print("オフセット")
                     self.all_results.extend(self.fetch_all_data_with_offset_pagination())
                 else:
-                    print("カーソル")
+                    #print("カーソル")
                     self.all_results.extend(self.fetch_all_data_with_cursor_pagination())
             
             if correspondingR:
@@ -53,7 +53,7 @@ class OpenAlexPagenationDataFetcher:
                     data = response.json()
                     # メタデータの表示
                     meta_data = "\n".join([f"{key}: {value}" for key, value in data.get("meta", {}).items()])
-                    print(f"id:{self.id}\nMeta Data:\n{meta_data}") 
+                    #print(f"id:{self.id}\nMeta Data:\n{meta_data}") 
                     if not self.only_japanese:
                         return data.get("meta", {}) ,data.get("results",[])
                     else:
@@ -90,7 +90,7 @@ class OpenAlexPagenationDataFetcher:
                     response = requests.get(self.endpoint_url, params=copied_params,timeout=5)
                     if response.status_code == 200:
                         data = response.json()
-                        print(f"Fetched page {page} with {len(data['results'])} results.")
+                        #print(f"Fetched page {page} with {len(data['results'])} results.")
                         if not self.only_japanese:
                             return page, data.get("results", [])  # ページ番号とデータを返す
                         else:

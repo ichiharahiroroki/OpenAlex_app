@@ -44,7 +44,7 @@ def create_author_profile(author_work_data_list: List[AuthorWorkData]) -> Author
     # Works数のカウント
     profile.works_count = len(author_work_data_list)
 
-    # 所属機関と国コードの集計を再実装
+    # 所属機関と国コードの集計
     detail_of_affiliation = {}  # キー: (Institution ID), 値: {'Institution Name', 'Country Code', 'Years': set()}
 
     # 所属タイプの集計を初期化
