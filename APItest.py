@@ -5,9 +5,11 @@ import requests
 
 #url ="  http://44.211.68.239:8000/count_japanese/"
 
+#18.183.149.240
+#ec2-18-183-149-240.ap-northeast-1.compute.amazonaws.com
+#url = "http://127.0.0.1:8000/feach_japanese/"
 
-url = "http://127.0.0.1:8000/feach_japanese/"
-
+url = "http://18.183.149.240:8000/count_japanese/"
 
 # 送信するデータ
 data = {

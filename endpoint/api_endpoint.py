@@ -1,6 +1,7 @@
 #uvicorn api_endpoint:app --reload
 #uvicorn endpoint.api_endpoint:app --host 0.0.0.0 --port 8000 --reload --ws-ping-interval 20 --ws-ping-timeout 500
 #ngrok http 8000
+import os, sys; sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect,HTTPException
 from typing import List
 from pydantic import BaseModel
@@ -12,6 +13,7 @@ from executables.ws_execute_feach_japanese import  ws_execute
 import asyncio
 import time
 import logging
+from utils.async_log_to_sheet import append_log_async
 from endpoint.connection_manager import ConnectionManager  # 修正後のインポート
 import threading
 
@@ -83,7 +85,7 @@ async def process_feach_japanese(request_data: RequestData):
     print(max_works)
      
     start_time = time.time()  # 実行開始時間を記録
-    result= execute(
+    result= await execute(
             topic_ids=request_data.topic_id,
             primary=request_data.primary,  # 固定値
             threshold=request_data.citation_count,
@@ -96,6 +98,8 @@ async def process_feach_japanese(request_data: RequestData):
     
     end_time = time.time()  # 実行終了時間を記録
     elapsed_time = end_time - start_time  # 実行時間を計算
+    print(f"プログラムが終了します。処理にかかった時間は{elapsed_time}")
+    await append_log_async(f"プログラムが終了します。処理にかかった時間は{elapsed_time}")  # ログの追加
     
     if isinstance(result, dict):  # result が辞書の場合
         result['execution_time'] = elapsed_time  # 実行時間を追加
@@ -145,69 +149,6 @@ async def ws_process_feach_japanese(request_data: RequestData):
         return result_dict
     
     
-from executables.sk_execute_feach_japanese import sk_execute  # 追加
-from endpoint.log_manager import add_log  # ログ管理モジュールをインポート
-
-# 新しいエンドポイント: sk_execute を呼び出す
-@app.post("/sk_fech_japanese/")
-async def sk_process_feach_japanese(request_data: RequestData):
-    count_cores = count_logical_cores()
-    max_works = count_cores * 2
-    max_works=4
-    print(max_works)
-     
-    start_time = time.time()  # 実行開始時間を記録
-    result = sk_execute(
-            topic_ids=request_data.topic_id,
-            primary=request_data.primary,  # 固定値
-            threshold=request_data.citation_count,
-            year_threshold=request_data.publication_year,
-            title_and_abstract_search=request_data.title_and_abstract_search,
-            max_works=max_works,
-            di_calculation=request_data.di_calculation,
-            output_sheet_name=request_data.output_sheet_name
-            )
-    
-    end_time = time.time()  # 実行終了時間を記録
-    elapsed_time = end_time - start_time  # 実行時間を計算
-    
-    add_log(f"処理にかかった時間: {elapsed_time}")
-    add_log("!*処理が完了しました*!")
-    
-    if isinstance(result, dict):  # result が辞書の場合
-        result['execution_time'] = elapsed_time  # 実行時間を追加   
-        return result
-    else:
-        result_dict = {
-            'execution_time': elapsed_time,
-            'message': result
-        }
-        return result_dict  
-    
-    
-    
-from endpoint.log_manager import add_log, get_logs, clear_logs  # ここを変更
-
-# スタックの中身を取得するエンドポイント
-@app.get("/sk_get_logs/")
-async def sk_get_logs():
-    """
-    log_managerに貯められたログを取得する
-    """
-    logs = get_logs()  # log_manager.py の get_logs() を呼ぶ
-    if not logs:
-        raise HTTPException(status_code=404, detail="スタックが空です")
-    return {"logs": logs, "total_logs": len(logs)}
-
-@app.post("/sk_clear_logs/")
-async def sk_clear_logs_endpoint():
-    """
-    log_managerに貯められているログをクリアする
-    """
-    clear_logs()  # log_manager.py の clear_logs() を呼ぶ
-    return {"message": "スタックがクリアされました", "current_stack_size": 0}
-
-
 @app.get("/")
 async def read_root():
     return {"message": "Welcome to the Author Information API"}  
@@ -227,6 +168,8 @@ if __name__ == "__main__":
 
     async def main():
         # 非同期関数を直接実行
+        #process_count_japanese
+        #process_feach_japanese
         result = await process_feach_japanese(RequestData(**request_data))
         print(result)
 

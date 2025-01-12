@@ -51,7 +51,7 @@ class SpreadsheetManager:
     
     def append_log(self,text):
         current_time = datetime.now()
-        self.append_row([f"{current_time}",text])
+        self.append_row([f"{current_time} - {text}"])
     
     def set_headers_if_empty(self, headers):
         """スプレッドシートの1行目が空白の場合にヘッダーを設定します。"""
@@ -173,8 +173,8 @@ class SpreadsheetManager:
  # 従来の方法でワークシートに行を追加
 # spreadsheet_manager.sheet.append_row(["データ1", "データ2", "データ3"])
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
  
 # # 使用例
-#     spreadsheet_manager = SpreadsheetManager("スタートアップ情報収集", "検索方式")
-#     print(spreadsheet_manager.get_all_links())
+    spreadsheet_manager = SpreadsheetManager("アプリケーション", "操作画面")
+    spreadsheet_manager.append_row(["時間","テスト","テスト2","3","4","5",""])

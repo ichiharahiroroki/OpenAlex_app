@@ -5,17 +5,25 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardi
 
 import asyncio
 from api.spreadsheet_manager import SpreadsheetManager
+from datetime import datetime
 
-async def append_log_async(sheet_manager, text):
+# 固定のスプレッドシート名とシート名
+FIXED_SPREADSHEET_NAME = "アプリケーション"
+FIXED_WORKSHEET_NAME = "操作画面"
+
+# 固定のSpreadsheetManagerインスタンスを作成
+fixed_sheet_manager = SpreadsheetManager(FIXED_SPREADSHEET_NAME, FIXED_WORKSHEET_NAME)
+
+
+async def append_log_async(text):
     """
     非同期でappend_logを実行する
     """
+    current_time = datetime.now()
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, sheet_manager.append_log, text)
+    await loop.run_in_executor(None, fixed_sheet_manager.append_row, [current_time.strftime("%Y-%m-%d %H:%M:%S"),text])
 
 
 if __name__ == "__main__":
-
     # 使用例
-    sheet_manager = SpreadsheetManager("アプリケーション", "API動作確認")
-    asyncio.run(append_log_async(sheet_manager, "非同期処理のログテスト"))
+    asyncio.run(append_log_async("非同期処理のログテスト"))
