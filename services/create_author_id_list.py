@@ -22,6 +22,16 @@ class CreateAuthorIdList:
         self.page = 1
         self.threshold = threshold #最低引用件数
         self.year_threshold = year_threshold #以降の年   
+        
+        if isinstance(title_and_abstract_search, list):
+            self.title_and_abstract_search = self.convert_keywords_to_or_condition(title_and_abstract_search)
+        elif isinstance(title_and_abstract_search, str):
+            self.title_and_abstract_search = title_and_abstract_search
+        else:
+            print(f"CreateAuthorIdListコンストラクタのtitle_and_abstract_searchに予期せぬ値:{title_and_abstract_search}")
+            print("キーワードなしとして、検索します。")
+            self.title_and_abstract_search=""
+        
         self.title_and_abstract_search = title_and_abstract_search
         self.primary = primary
         self.researcher_rows=[]
@@ -54,7 +64,7 @@ class CreateAuthorIdList:
                 "page": self.page, 
                 "per_page": self.per_page    
             }
-            fetcher = OpenAlexPagenationDataFetcher(self.endpoint_url,params,self.title_and_abstract_search,max_workers = self.max_works,only_japanese=True)
+            fetcher = OpenAlexPagenationDataFetcher(self.endpoint_url,params,self.title_and_abstract_search,max_works = self.max_works,only_japanese=True)
             self.all_results.extend(fetcher.all_results) 
 
     
@@ -91,7 +101,7 @@ class CreateAuthorIdList:
             
         }
    
-        fetcher = OpenAlexPagenationDataFetcher(self.endpoint_url,params,topic_id,max_workers =self.max_workers,only_japanese=True)
+        fetcher = OpenAlexPagenationDataFetcher(self.endpoint_url,params,topic_id,max_works =self.max_workers,only_japanese=True)
         try:
             return fetcher.all_results  # 成功した場合は結果を返す
         except Exception as e:
@@ -99,13 +109,21 @@ class CreateAuthorIdList:
             return []
         
     
+    def convert_keywords_to_or_condition(self,keywords):
+        if not keywords:
+            return ""
+        
+        # 各キーワードをクォートで囲み、ORで結合して括弧で囲む
+        quoted_keywords = [f'"{keyword}"' for keyword in keywords]
+        return f'({" OR ".join(quoted_keywords)})'
+    
+
 if __name__ == "__main__":
-
-
-    # 開始時間を記録
+  
+    #開始時間を記録
     start_time = time.time()
     
-    creater = CreateAuthorIdList(topic_ids=["T10966","T10966","T10966","T10966"],primary=True,threshold=10,year_threshold=2010,title_and_abstract_search='',max_works=16)#("novel target" OR "new target" OR "therapeutic target")
+    creater = CreateAuthorIdList(topic_ids=["T10966","T10966","T10966","T10966"],primary=True,threshold=10,year_threshold=2010,title_and_abstract_search='("novel target" OR "new target" OR "therapeutic target"',max_works=16)#("novel target" OR "new target" OR "therapeutic target")
     creater.run_get_works()
     print(len(creater.all_results))
     print(len(creater.authors_id_list))

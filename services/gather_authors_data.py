@@ -31,7 +31,7 @@ class GatherAuthorData:
                 # "mailto":"ichiharabox@gmail.com"
             }#type_crossref: "journal-article" #publication_date:"2018-02-13"#cited_by_count:>20#type_crossref:journal-article
             
-            fetcher = OpenAlexPagenationDataFetcher(endpoint_url, params, self.author_id, max_workers=self.max_workers, only_japanese=False, correspondingR=False)
+            fetcher = OpenAlexPagenationDataFetcher(endpoint_url, params, self.author_id, max_works=self.max_workers, only_japanese=False, correspondingR=False)
             _, self.article_dict_list = OpenAlexResultParser.works_dict_list_from_works_results(fetcher.all_results)
 
         else:

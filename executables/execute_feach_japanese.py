@@ -7,6 +7,9 @@ import logging
 from api.spreadsheet_manager import SpreadsheetManager
 from config.secret_manager import SecretManager
 import time
+from utils.async_log_to_sheet import append_log_async
+import asyncio
+
 secret = SecretManager()
 
 #条件を指定して研究者リスト作成する
@@ -18,11 +21,16 @@ def execute(topic_ids,primary=True,threshold=15,year_threshold=2015,title_and_ab
         person_num = 4
         count_cores = count_logical_cores()
         max_works = count_cores*2
+        
+        asyncio.run(append_log_async(sheet_manager,f"論理コア数:{count_cores},max_works:{max_works}"))#ログの追加
+
         creater = CreateAuthorIdList(topic_ids=topic_ids,primary=primary,threshold=threshold,year_threshold=year_threshold,title_and_abstract_search=title_and_abstract_search,max_works=max_works)
         creater.run_get_works()
         print('論文数:',len(creater.all_results))
         creater.extract_authors(only_japanese=True)
         print('著者数:',len(creater.authors_id_list))
+
+        asyncio.run(append_log_async(sheet_manager,f"論文数:{len(creater.all_results)},著者数:{len(creater.authors_id_list)}")) #ログの追加
         
         max_workers=max_works//person_num
         
@@ -48,11 +56,12 @@ def execute(topic_ids,primary=True,threshold=15,year_threshold=2015,title_and_ab
             
             except Exception as e:
                 logging.error(f"process_author内でエラー発生 (author_id: {author_id}): {e}", exc_info=True)
+                asyncio.run(append_log_async(sheet_manager,f"process_author内でエラー発生 (author_id: {author_id}): {e}")) #ログの追加
                 raise  # エラーを再スローして上位で処理
             
         # 並列処理
         results_list = []
-        
+        length = 10
         with ThreadPoolExecutor(max_workers=person_num) as executor:  # max_workersは並列スレッド数
             futures = {executor.submit(process_author, author_id): author_id for author_id in creater.authors_id_list}
             for future in as_completed(futures):
@@ -60,10 +69,17 @@ def execute(topic_ids,primary=True,threshold=15,year_threshold=2015,title_and_ab
                 try:
                     result = future.result()  # 処理結果を取得
                     results_list.append(result)
+                    
+                    if len(results_list) >= length:  
+                        print(f"著者{length}人の処理が完了しました。")
+                        asyncio.run(append_log_async(sheet_manager,f"著者{length}人の処理が完了しました。")) #ログの追加
+                        length+=10
+                
                 except Exception as e: 
                     # メインスレッドでのエラーハンドリング
                     logging.error(f"{author_id} の処理中にエラーが発生しました: {e}")
-
+                    asyncio.run(append_log_async(sheet_manager,f"{author_id} の処理中にエラーが発生しました: {e}")) #ログの追加
+       
         #print("研究者数:",len(results_list))
         rows =[]
         for result in results_list:
@@ -76,6 +92,7 @@ def execute(topic_ids,primary=True,threshold=15,year_threshold=2015,title_and_ab
                     #print("インデクス",i)
                     row[i] = each[:50000]
         
+        sheet_manager.clear_rows_from_second()
         max_retries = 5
         attempt = 0  
         while attempt < max_retries:
@@ -106,7 +123,7 @@ if __name__ == "__main__":
     start_time = time.time()
     
     topic_ids= ["T10966"]
-    execute(topic_ids,primary=True,threshold=15,year_threshold=2015,title_and_abstract_search='',max_works=16)
+    execute(topic_ids,primary=True,threshold=15,year_threshold=2020,title_and_abstract_search='',max_works=16,di_calculation=False,output_sheet_name="API動作確認")
     
     # 終了時間を記録
     end_time = time.time()

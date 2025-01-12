@@ -3,6 +3,7 @@
 import gspread
 from google.oauth2.service_account import Credentials
 import os
+from datetime import datetime
 
 class SpreadsheetManager:
     def __init__(self, spreadsheet_name, worksheet_name):
@@ -43,6 +44,14 @@ class SpreadsheetManager:
     def append_rows(self, rows):
         """与えられたリストのリストをスプレッドシートに追加します。"""
         self.sheet.append_rows(rows, value_input_option='USER_ENTERED')
+    
+    def append_row(self,row):
+        self.sheet.append_row(row, value_input_option='USER_ENTERED')
+    
+    
+    def append_log(self,text):
+        current_time = datetime.now()
+        self.append_row([f"{current_time}",text])
     
     def set_headers_if_empty(self, headers):
         """スプレッドシートの1行目が空白の場合にヘッダーを設定します。"""
@@ -98,7 +107,16 @@ class SpreadsheetManager:
         if total_rows > 2:
             range_to_clear = f"3:{total_rows}"  # 3行目から最終行までの範囲を指定
             self.sheet.batch_clear([range_to_clear])
-    
+
+    def clear_rows_from_second(self):
+        """2行目以降のすべてのデータをクリアにする"""
+        # ワークシートの総行数を取得
+        total_rows = len(self.sheet.get_all_values())
+
+        # 2行目以降が存在する場合のみクリア
+        if total_rows > 1:
+            range_to_clear = f"2:{total_rows}"  # 2行目から最終行までの範囲を指定
+            self.sheet.batch_clear([range_to_clear])    
     
     
     def get_rows_by_columns(self, column_names):

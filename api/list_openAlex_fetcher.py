@@ -10,10 +10,10 @@ from collections import Counter
 
 class OpenAlexPagenationDataFetcher:
     
-    def __init__(self,endpoint_url, params,id,max_workers,only_japanese,correspondingR=False,create_keywords_dict=False):
+    def __init__(self,endpoint_url, params,id,max_works,only_japanese,correspondingR=False,create_keywords_dict=False):
         
         self.output_log =True
-        self.max_workers =  max_workers
+        self.max_workers =  max_works
         self.endpoint_url = endpoint_url
         self.params = params
         id = extract_id_from_url(id)
@@ -73,7 +73,7 @@ class OpenAlexPagenationDataFetcher:
                          
             except requests.exceptions.Timeout:
                 print("リクエストがタイムアウトしました。再試行します。")
-            except:
+            except Exception as e:
                 print("サーバーから遮断されたので1秒休憩します。")
                 time.sleep(1)
             
@@ -105,13 +105,14 @@ class OpenAlexPagenationDataFetcher:
                     
                     retrial_num+=1
                     time.sleep(retrial_num)
-                    self.print_log("fetch_all_data_with_offset_pagination retrial_num:",retrial_num,"id:",self.id)
+                    self.print_log(f"fetch_all_data_with_offset_pagination retrial_num:{retrial_num},id:{self.id}")
                 
                 except requests.exceptions.Timeout:
                     print("リクエストがタイムアウトしました。再試行します。")
                 
-                except:
+                except Exception as e:
                     print("サーバーから遮断されたので1秒休憩します。")
+                    print(e)
                     time.sleep(1)
                     
                 
@@ -142,7 +143,7 @@ class OpenAlexPagenationDataFetcher:
                     response = requests.get(self.endpoint_url, params=params,timeout=5)
                     if response.status_code == 200:
                         data = response.json()
-                        print(f"Fetched page {page} with {len(data['results'])} results.")
+                        self.print_log(f"Fetched page {page} with {len(data['results'])} results.")
                         results = data.get("results", [])
                         # 結果をall_resultsに追加
                         all_results.extend(results)
@@ -156,7 +157,7 @@ class OpenAlexPagenationDataFetcher:
                 except requests.exceptions.Timeout:
                     print("リクエストがタイムアウトしました。再試行します。")    
                 
-                except:
+                except Exception as e:
                     print("サーバーから遮断されたので1秒休憩します。")
                     time.sleep(1)
                 
@@ -223,5 +224,6 @@ if __name__ == "__main__":
        "per_page": 200,
     }
     
-    fetcher = OpenAlexPagenationDataFetcher(endpoint_url, params,id="aaaaaa",max_workers=12,only_japanese=False,correspondingR=True,create_keywords_dict=True)
+    fetcher = OpenAlexPagenationDataFetcher(endpoint_url, params,id="aaaaaa",max_works=12,only_japanese=False,correspondingR=True,create_keywords_dict=True)
     print(len(fetcher.keywords_dict))
+    print(fetcher.meta)
