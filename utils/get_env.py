@@ -1,5 +1,5 @@
-import requests
 
+import requests
 def get_instance_id():
     try:
         # メタデータサービスのトークン取得エンドポイント

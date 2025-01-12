@@ -46,9 +46,9 @@ def test2():
     print("Status Code:", response.status_code)
     data = response.json()
     print("Response Body:",data)
-    print(data["status"])
-    print(data["output"])
+    print(data.get("status",""))
+    print(data.get("output",""))
     
     
 if __name__ == "__main__":
-    test2()
+    test1()
