@@ -9,7 +9,7 @@ import requests
 #ec2-18-183-149-240.ap-northeast-1.compute.amazonaws.com
 #url = "http://127.0.0.1:8000/feach_japanese/"
 
-url = "http://18.183.149.240:8000/count_japanese/"
+url = "http://13.231.227.98:8000/feach_japanese/"
 
 # 送信するデータ
 data = {

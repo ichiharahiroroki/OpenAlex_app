@@ -98,8 +98,15 @@ async def process_feach_japanese(request_data: RequestData):
     
     end_time = time.time()  # 実行終了時間を記録
     elapsed_time = end_time - start_time  # 実行時間を計算
-    print(f"プログラムが終了します。処理にかかった時間は{elapsed_time}")
-    await append_log_async(f"プログラムが終了します。処理にかかった時間は{elapsed_time}")  # ログの追加
+    # 時間、分、秒に変換
+    hours = int(elapsed_time // 3600)
+    minutes = int((elapsed_time % 3600) // 60)
+    seconds = int(elapsed_time % 60)
+    # フォーマット済みの文字列を作成
+    formatted_time = f"{hours}時間{minutes}分{seconds}秒"
+    print(f"プログラムが終了します。処理にかかった時間は{formatted_time}")
+    
+    await append_log_async(f"プログラムが終了します。処理にかかった時間:{formatted_time}")  # ログの追加
     
     if isinstance(result, dict):  # result が辞書の場合
         result['execution_time'] = elapsed_time  # 実行時間を追加
