@@ -16,6 +16,7 @@ import logging
 from utils.async_log_to_sheet import append_log_async
 from endpoint.connection_manager import ConnectionManager  # 修正後のインポート
 import threading
+from config.get_env import get_instance_id,stop_this_instance
 
 
 app = FastAPI(title="Author Information API")
@@ -55,68 +56,120 @@ async def websocket_endpoint(websocket: WebSocket):
 # エンドポイント: データを受け取って処理
 @app.post("/count_japanese/")
 async def process_count_japanese(request_data: RequestData):
-    count_cores = count_logical_cores()
-    max_works = count_cores*2
-    print(max_works)
-    
-    creater = CreateAuthorIdList(
-        topic_ids=request_data.topic_id,
-        primary=request_data.primary,  # 固定値
-        threshold=request_data.citation_count,
-        year_threshold=request_data.publication_year,
-        title_and_abstract_search=request_data.title_and_abstract_search,
-        max_works = max_works
-    )
-
-    creater.run_get_works()
-    creater.extract_authors(only_japanese=True)
-    
-    return {
-        "count_works": len(creater.all_results),
-        "count_japanese_auhtors": len(creater.authors_id_list)
-    }
-    
-    
-# エンドポイント: データを受け取って処理
-@app.post("/feach_japanese/")
-async def process_feach_japanese(request_data: RequestData):
-    count_cores = count_logical_cores()
-    max_works = count_cores*2
-    print(max_works)
-     
-    start_time = time.time()  # 実行開始時間を記録
-    result= await execute(
+    try:
+        await append_log_async(f"")  
+        count_cores = count_logical_cores()
+        max_works = count_cores*2
+        print(max_works)
+        
+        creater = CreateAuthorIdList(
             topic_ids=request_data.topic_id,
             primary=request_data.primary,  # 固定値
             threshold=request_data.citation_count,
             year_threshold=request_data.publication_year,
             title_and_abstract_search=request_data.title_and_abstract_search,
-            max_works=max_works,
-            di_calculation=request_data.di_calculation,
-            output_sheet_name=request_data.output_sheet_name
-            )
+            max_works = max_works
+        )
+
+        creater.run_get_works()
+        creater.extract_authors(only_japanese=True)
+        print(f"日本人論文数:{len(creater.all_results)},日本人研究者数:{len(creater.authors_id_list)}")
+        await append_log_async(f"論文数:{len(creater.all_results)},日本人研究者数:{len(creater.authors_id_list)}")  
+        print(f"処理を終了します。")
+        await append_log_async(f"プログラムを処理を終了します。")  
+        
+        this_instance_id = get_instance_id()
+        if this_instance_id =="i-0ef1507637db1e852":
+            print(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
+            await append_log_async(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")  
+        elif this_instance_id =="i-00c9116fa53632f53":
+            print(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
+            await append_log_async(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")     
+        elif this_instance_id =="local":
+            print("ローカル環境で実行されたので、インスタンスの停止は不要です。")
+            await append_log_async(f"ローカル環境で実行されたので、インスタンスの停止は不要です。")    
+        else:
+            print(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")
+            await append_log_async(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")     
+           
+        stop_this_instance(this_instance_id)
+        if this_instance_id !="local":
+            await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
+        
+    except Exception as e:
+        print(e)
+        await append_log_async(f"{e}")  # ログの追加
+        this_instance_id = get_instance_id()
+        print(f"インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
+        await append_log_async(f"インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
+        stop_this_instance(this_instance_id)
+        if this_instance_id !="local":
+            await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
     
-    end_time = time.time()  # 実行終了時間を記録
-    elapsed_time = end_time - start_time  # 実行時間を計算
-    # 時間、分、秒に変換
-    hours = int(elapsed_time // 3600)
-    minutes = int((elapsed_time % 3600) // 60)
-    seconds = int(elapsed_time % 60)
-    # フォーマット済みの文字列を作成
-    formatted_time = f"{hours}時間{minutes}分{seconds}秒"
-    print(f"プログラムが終了します。処理にかかった時間は{formatted_time}")
-    
-    await append_log_async(f"プログラムが終了します。処理にかかった時間:{formatted_time}")  # ログの追加
-    
-    if isinstance(result, dict):  # result が辞書の場合
-        result['execution_time'] = elapsed_time  # 実行時間を追加
-        return result
-    else:
-        result_dict={
-            'execution_time':elapsed_time,
-            'message':result
-            }
-        return result_dict
+
+# エンドポイント: データを受け取って処理
+@app.post("/feach_japanese/")
+async def process_feach_japanese(request_data: RequestData):
+    try:
+        count_cores = count_logical_cores()
+        max_works = count_cores*2
+        print(max_works)
+        
+        start_time = time.time()  # 実行開始時間を記録
+        result= await execute(
+                topic_ids=request_data.topic_id,
+                primary=request_data.primary,  # 固定値
+                threshold=request_data.citation_count,
+                year_threshold=request_data.publication_year,
+                title_and_abstract_search=request_data.title_and_abstract_search,
+                max_works=max_works,
+                di_calculation=request_data.di_calculation,
+                output_sheet_name=request_data.output_sheet_name
+                )
+        
+        end_time = time.time()  # 実行終了時間を記録
+        elapsed_time = end_time - start_time  # 実行時間を計算
+        # 時間、分、秒に変換
+        hours = int(elapsed_time // 3600)
+        minutes = int((elapsed_time % 3600) // 60)
+        seconds = int(elapsed_time % 60)
+        # フォーマット済みの文字列を作成
+        formatted_time = f"{hours}時間{minutes}分{seconds}秒"
+        print(f"プログラムが終了します。処理にかかった時間は{formatted_time}")
+        
+        await append_log_async(f"プログラムが終了します。処理にかかった時間:{formatted_time}")  # ログの追加
+        
+        this_instance_id = get_instance_id()
+        if this_instance_id =="i-0ef1507637db1e852":
+            print(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
+            await append_log_async(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")  
+        elif this_instance_id =="i-00c9116fa53632f53":
+            print(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
+            await append_log_async(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")     
+        elif this_instance_id =="local":
+            print("ローカル環境で実行されたので、インスタンスの停止は不要です。")
+            await append_log_async(f"ローカル環境で実行されたので、インスタンスの停止は不要です。")    
+        else:
+            print(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")
+            await append_log_async(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")     
+            
+        stop_this_instance(this_instance_id)
+        if this_instance_id !="local":
+            await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
+        
+    except Exception as e:
+        print(e)
+        await append_log_async(f"{e}")  # ログの追加
+        this_instance_id = get_instance_id()
+        print(f"インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
+        await append_log_async(f"インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
+        stop_this_instance(this_instance_id)
+        if this_instance_id !="local":
+            await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
+
+
+
+
 
 # エンドポイント: データを受け取って処理
 @app.post("/ws_feach_japanese/")
@@ -177,8 +230,8 @@ if __name__ == "__main__":
         # 非同期関数を直接実行
         #process_count_japanese
         #process_feach_japanese
-        result = await process_feach_japanese(RequestData(**request_data))
-        print(result)
+        await process_feach_japanese(RequestData(**request_data))
+        
 
     # イベントループで実行
     asyncio.run(main())
