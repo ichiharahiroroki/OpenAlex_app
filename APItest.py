@@ -35,7 +35,7 @@ def test1():
 
 def test2():
 
-    url = "http://18.183.244.66:8000/control-ec2/"
+    url = "http://52.193.129.19:8000/control-ec2/"
 
     data = {
         "action":"start",

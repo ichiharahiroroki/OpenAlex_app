@@ -6,6 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardi
 import asyncio
 from api.spreadsheet_manager import SpreadsheetManager
 from datetime import datetime
+from pytz import timezone
 
 # 固定のスプレッドシート名とシート名
 FIXED_SPREADSHEET_NAME = "アプリケーション"
@@ -19,7 +20,9 @@ async def append_log_async(text):
     """
     非同期でappend_logを実行する
     """
-    current_time = datetime.now()
+    # 日本時間のタイムゾーンを指定
+    jst = timezone('Asia/Tokyo')
+    current_time = datetime.now(jst)
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, fixed_sheet_manager.append_row, [current_time.strftime("%Y-%m-%d %H:%M:%S"),text])
 
