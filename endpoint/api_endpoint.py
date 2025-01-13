@@ -161,7 +161,7 @@ async def process_feach_japanese(request_data: RequestData):
             
         stop_this_instance(this_instance_id)
         if this_instance_id !="local":
-            time.sleep(5)
+            time.sleep(8)
             await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
         
     except Exception as e:
@@ -174,7 +174,7 @@ async def process_feach_japanese(request_data: RequestData):
         
             stop_this_instance(this_instance_id)
             if this_instance_id !="local":
-                time.sleep(5)
+                time.sleep(8)
                 print(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}")
                 await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
         except:
