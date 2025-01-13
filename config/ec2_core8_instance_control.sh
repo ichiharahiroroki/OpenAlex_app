@@ -1,4 +1,6 @@
 #!/bin/bash  
+#これで権限を付与してからpushすること。
+#chmod +x ec2_core8_instance_control.sh
 
 # インスタンスID（AWS EC2のインスタンスIDを指定します）
 INSTANCE_ID="i-0ef1507637db1e852"
