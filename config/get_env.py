@@ -1,5 +1,6 @@
 
 import requests
+import os
 
 
 def get_instance_id():
@@ -40,13 +41,17 @@ from fastapi import HTTPException
 
 
 def stop_this_instance(instance_id):
+    # 現在のファイルのパスを取得してディレクトリを取得
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    
     if instance_id=="i-0ef1507637db1e852":
-        CORE8_SCRIPT_PATH = "./ec2_core8_instance_control.sh"
+        CORE8_SCRIPT_PATH = os.path.join(current_dir, "ec2_core8_instance_control.sh")
     elif instance_id=="local":
         print("ローカル環境で実行しているのでインスタンスを止める処理はしません。")
         return
     elif instance_id=="i-00c9116fa53632f53":
-        CORE8_SCRIPT_PATH = "./ec2_test_instance_control.sh" 
+        CORE8_SCRIPT_PATH = os.path.join(current_dir, "ec2_test_instance_control.sh")
     else:
         raise Exception(f"Unexpected value in stop_this_instance method: {instance_id}")
         
@@ -73,5 +78,8 @@ def stop_this_instance(instance_id):
     
     
 if __name__ == "__main__":
-    instance_id = get_instance_id()
-    print(f"Instance ID: {instance_id}")
+    # instance_id = get_instance_id()
+    # print(f"Instance ID: {instance_id}")
+    
+    stop_this_instance("i-00c9116fa53632f53")
+    
