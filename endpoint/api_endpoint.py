@@ -1,4 +1,4 @@
-#uvicorn api_endpoint:app --reload
+#uvicorn endpoint.api_endpoint:app --reload
 #uvicorn endpoint.api_endpoint:app --host 0.0.0.0 --port 8000 --reload --ws-ping-interval 20 --ws-ping-timeout 500
 #ngrok http 8000
 import os, sys; sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
@@ -94,6 +94,7 @@ async def process_count_japanese(request_data: RequestData):
            
         stop_this_instance(this_instance_id)
         if this_instance_id !="local":
+            time.sleep(4)
             await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
         
     except Exception as e:
@@ -105,6 +106,7 @@ async def process_count_japanese(request_data: RequestData):
             await append_log_async(f"エラーが発生したため、処理が中断されました。インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
             stop_this_instance(this_instance_id)
             if this_instance_id !="local":
+                time.sleep(4)
                 await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
         except:
             print(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}")
@@ -159,6 +161,7 @@ async def process_feach_japanese(request_data: RequestData):
             
         stop_this_instance(this_instance_id)
         if this_instance_id !="local":
+            time.sleep(5)
             await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
         
     except Exception as e:
@@ -171,6 +174,7 @@ async def process_feach_japanese(request_data: RequestData):
         
             stop_this_instance(this_instance_id)
             if this_instance_id !="local":
+                time.sleep(5)
                 print(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}")
                 await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
         except:

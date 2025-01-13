@@ -35,20 +35,32 @@ def test1():
 
 def test2():
 
-    url = "http://52.193.129.19:8000/control-ec2/"
+    try:
+        url = "http://13.113.21.96:8000/control-ec2/"
 
-    data = {
-        "action":"start",
-        "instance":"core8"
-    }
-    response = requests.post(url, json=data,timeout=10)
-     # レスポンスを表示
-    print("Status Code:", response.status_code)
-    data = response.json()
-    print("Response Body:",data)
-    print(data.get("status",""))
-    print(data.get("output",""))
-    
-    
+        data = {
+            "action":"start",
+            "instance":"core8"
+        }
+        response = requests.post(url, json=data,timeout=10)
+        # レスポンスを表示
+        print("Status Code:", response.status_code)
+        if response.status_code==500:           
+            try:
+                error_detail = response.json().get("detail", "詳細なエラー情報はありません")
+                print("現在処理を受け付けていません。しばらく待ってからやり直してください。")
+                print("エラー詳細:", error_detail)
+            except ValueError:
+                print("エラー情報を解析できません。")
+        
+        else:
+            data = response.json()
+            print("Response Body:",data)
+            print(data.get("status",""))
+            print(data.get("output",""))
+    except Exception as e:
+        print(e)
+        
+        
 if __name__ == "__main__":
     test1()
