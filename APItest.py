@@ -20,7 +20,7 @@ def request_to_OpenAlex_instance(instance:str,data):
     
     try:   
         # POSTリクエストを送信して結果を確認
-        response = requests.post(url, json=data ,timeout=10)
+        response = requests.post(url, json=data)
 
         # レスポンスを表示
         print("Status Code:", response.status_code)
@@ -66,10 +66,10 @@ if __name__ == "__main__":
 
     #スプレットシートをクリアにしてからアップ。
     
-    #control_ec2_instance("core8","start")
+    control_ec2_instance("core8","start")
 
-    #time.sleep(15)
-    # 送信するデータ
+    # #time.sleep(15)
+    # # 送信するデータ
     data = {
         "author_info_source": "Example Source",
         "topic_id": ["T10966"],  # リストとして修正
@@ -78,7 +78,8 @@ if __name__ == "__main__":
         "publication_year": 2020,  # 整数に修正
         "title_and_abstract_search":"novel target,new target,therapeutic target" ,  # フィールドを追加'("novel target" OR "new target" OR "therapeutic target")'
         "di_calculation": False,  # ブール値に修正
-        "output_sheet_name": "API動作確認"
+        "output_sheet_name": "API動作確認",
+        "stop_control":False
     }
     request_to_OpenAlex_instance("core8",data)
 
