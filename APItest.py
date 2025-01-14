@@ -41,7 +41,7 @@ def control_ec2_instance(instance:str,action:str):
             "action":action,
             "instance":instance #core8
         }
-        response = requests.post(url, json=data,timeout=10)
+        response = requests.post(url, json=data,timeout=50)
         # レスポンスを表示
         print("Status Code:", response.status_code)
         if response.status_code==500:           
@@ -65,9 +65,10 @@ def control_ec2_instance(instance:str,action:str):
 if __name__ == "__main__":
 
     #スプレットシートをクリアにしてからアップ。
+    
+    #control_ec2_instance("core8","start")
 
-    # control_ec2_instance("core8","start")
-    # time.sleep(15)
+    #time.sleep(15)
     # 送信するデータ
     data = {
         "author_info_source": "Example Source",

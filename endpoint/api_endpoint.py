@@ -34,6 +34,7 @@ class RequestData(BaseModel):
     title_and_abstract_search: str =""
     di_calculation: bool =False # DI計算（真偽値）
     output_sheet_name: str =""  # 出力シート名
+    stop_control:bool=True #実行後に自動でインスタンスを閉じる。
     
 
 # WebSocket エンドポイント
@@ -79,39 +80,45 @@ async def process_count_japanese(request_data: RequestData):
         await append_log_async(f"プログラムを処理を終了します。")  
         
         this_instance_id = get_instance_id()
-        if this_instance_id =="i-0ef1507637db1e852":
-            print(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
-            await append_log_async(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")  
-        elif this_instance_id =="i-00c9116fa53632f53":
-            print(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
-            await append_log_async(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")     
-        elif this_instance_id =="local":
-            print("ローカル環境で実行されたので、インスタンスの停止は不要です。")
-            await append_log_async(f"ローカル環境で実行されたので、インスタンスの停止は不要です。")    
+        if request_data.stop_control:
+            if this_instance_id =="i-0ef1507637db1e852":
+                print(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
+                await append_log_async(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")  
+            elif this_instance_id =="i-00c9116fa53632f53":
+                print(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
+                await append_log_async(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")     
+            elif this_instance_id =="local":
+                print("ローカル環境で実行されたので、インスタンスの停止は不要です。")
+                await append_log_async(f"ローカル環境で実行されたので、インスタンスの停止は不要です。")    
+            else:
+                print(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")
+                await append_log_async(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")     
+            
+            stop_this_instance(this_instance_id)
         else:
-            print(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")
-            await append_log_async(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")     
-           
-        stop_this_instance(this_instance_id)
-        # if this_instance_id !="local":
-        #     time.sleep(4)
-        #     await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
-        
+            print(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
+            await append_log_async(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
+            
     except Exception as e:
         try:
-            print(e)
-            await append_log_async(f"{e}")  # ログの追加
+            print(f"エラーが発生したため、処理が中断されました。{e}")
+            await append_log_async(f"エラーが発生したため、処理が中断されました。{e}")  # ログの追加
             this_instance_id = get_instance_id()
-            print(f"エラーが発生したため、処理が中断されました。インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
-            await append_log_async(f"エラーが発生したため、処理が中断されました。インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
-            stop_this_instance(this_instance_id)
-            # if this_instance_id !="local":
-            #     time.sleep(4)
-            #     await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
+            if request_data.stop_control:
+                print(f"インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
+                await append_log_async(f"インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
+                stop_this_instance(this_instance_id)
+            else:
+                print(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
+                await append_log_async(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
+          
         except:
-            print(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}")
-            await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
-            
+            if request_data.stop_control:
+                print(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}")
+                await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
+            else:
+                print(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
+                await append_log_async(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
 
 # エンドポイント: データを受け取って処理
 @app.post("/feach_japanese/")
@@ -146,40 +153,45 @@ async def process_feach_japanese(request_data: RequestData):
         await append_log_async(f"プログラムが終了します。処理にかかった時間:{formatted_time}")  # ログの追加
         
         this_instance_id = get_instance_id()
-        if this_instance_id =="i-0ef1507637db1e852":
-            print(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
-            await append_log_async(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")  
-        elif this_instance_id =="i-00c9116fa53632f53":
-            print(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
-            await append_log_async(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")     
-        elif this_instance_id =="local":
-            print("ローカル環境で実行されたので、インスタンスの停止は不要です。")
-            await append_log_async(f"ローカル環境で実行されたので、インスタンスの停止は不要です。")    
+        if request_data.stop_control:
+            if this_instance_id =="i-0ef1507637db1e852":
+                print(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
+                await append_log_async(f"CORE8のインスタンスを停止する処理をします。インスタンスID:{this_instance_id}")  
+            elif this_instance_id =="i-00c9116fa53632f53":
+                print(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")
+                await append_log_async(f"テスト用インスタンスを停止する処理をします。インスタンスID:{this_instance_id}")     
+            elif this_instance_id =="local":
+                print("ローカル環境で実行されたので、インスタンスの停止は不要です。")
+                await append_log_async(f"ローカル環境で実行されたので、インスタンスの停止は不要です。")    
+            else:
+                print(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")
+                await append_log_async(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")     
+                
+            stop_this_instance(this_instance_id)
         else:
-            print(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")
-            await append_log_async(f"現在のインスタンス環境が登録されていません。手動でインスタンスの停止が必要です。インスタンスID:{this_instance_id}")     
-            
-        stop_this_instance(this_instance_id)
-        #if this_instance_id !="local":
-            # time.sleep(8)
-            # await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
+            print(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
+            await append_log_async(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
         
     except Exception as e:
         try:
-            print(e)
-            await append_log_async(f"{e}")  # ログの追加
-            this_instance_id = get_instance_id()
-            print(f"エラーが発生したため、処理が中断されました。インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
-            await append_log_async(f"エラーが発生したため、処理が中断されました。インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
+            print(f"エラーが発生したため、処理が中断されました。{e}")
+            await append_log_async(f"エラーが発生したため、処理が中断されました。{e}")  # ログの追加
         
-            stop_this_instance(this_instance_id)
-            # if this_instance_id !="local":
-            #     time.sleep(8)
-            #     print(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}")
-            #     await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
+            this_instance_id = get_instance_id()
+            if request_data.stop_control:
+                print(f"インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
+                await append_log_async(f"インスタンスの停止処理をします。インスタンスID:{this_instance_id}")
+                stop_this_instance(this_instance_id)
+            else:
+                print(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
+                await append_log_async(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
         except:
-            print(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}")
-            await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
+            if request_data.stop_control:
+                print(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}")
+                await append_log_async(f"インスタンスの停止処理に失敗しました。手動で停止させてください。:{this_instance_id}") 
+            else:
+                print(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
+                await append_log_async(f"インスタンスを停止していません。停止忘れに注意してください。インスタンスID:{this_instance_id}")
 
 
 # エンドポイント: データを受け取って処理
