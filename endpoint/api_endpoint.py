@@ -232,7 +232,7 @@ if __name__ == "__main__":
         "primary": True,
         "citation_count": 15,
         "publication_year": 2015,
-        "title_and_abstract_search": "count",
+        "title_and_abstract_search": "novel target,new target,therapeutic target",
         "di_calculation": False,
         "output_sheet_name": "API動作確認"
     }

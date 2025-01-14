@@ -64,10 +64,10 @@ def control_ec2_instance(instance:str,action:str):
         
 if __name__ == "__main__":
 
+    #スプレットシートをクリアにしてからアップ。
 
-
-    #control_ec2_instance("core8","start")
-    # # time.sleep(5)
+    # control_ec2_instance("core8","start")
+    # time.sleep(15)
     # 送信するデータ
     data = {
         "author_info_source": "Example Source",
@@ -75,7 +75,7 @@ if __name__ == "__main__":
         "primary": True,  # フィールドを追加
         "citation_count": 20,  # 整数に修正
         "publication_year": 2020,  # 整数に修正
-        "title_and_abstract_search": '("novel target" OR "new target" OR "therapeutic target")',  # フィールドを追加
+        "title_and_abstract_search":"novel target,new target,therapeutic target" ,  # フィールドを追加'("novel target" OR "new target" OR "therapeutic target")'
         "di_calculation": False,  # ブール値に修正
         "output_sheet_name": "API動作確認"
     }

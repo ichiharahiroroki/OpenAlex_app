@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from api.list_openAlex_fetcher import OpenAlexPagenationDataFetcher
 
 class CreateAuthorIdList:
-    def __init__(self,topic_ids,primary,threshold,year_threshold,title_and_abstract_search,max_works=12):
+    def __init__(self,topic_ids,primary,threshold,year_threshold,title_and_abstract_search="",max_works=12):
         self.all_results =[]
         self.authors_id_list =[]
         self.topic_ids = topic_ids
@@ -23,14 +23,23 @@ class CreateAuthorIdList:
         self.threshold = threshold #最低引用件数
         self.year_threshold = year_threshold #以降の年   
         
-        if isinstance(title_and_abstract_search, list):
-            self.title_and_abstract_search = self.convert_keywords_to_or_condition(title_and_abstract_search)
-        elif isinstance(title_and_abstract_search, str):
-            self.title_and_abstract_search = title_and_abstract_search
-        else:
-            print(f"CreateAuthorIdListコンストラクタのtitle_and_abstract_searchに予期せぬ値:{title_and_abstract_search}")
-            print("キーワードなしとして、検索します。")
-            self.title_and_abstract_search=""
+        
+        if title_and_abstract_search:
+            if isinstance(title_and_abstract_search, list):
+                self.title_and_abstract_search = self.convert_keywords_to_or_condition(title_and_abstract_search)
+            elif isinstance(title_and_abstract_search, str):
+                if "," in title_and_abstract_search:
+                    array = title_and_abstract_search.split(",")
+                    self.title_and_abstract_search = self.convert_keywords_to_or_condition(array)
+                elif title_and_abstract_search.startswith("(") and title_and_abstract_search.endswith(")"):
+                    self.title_and_abstract_search = title_and_abstract_search
+                else:
+                    print(f"CreateAuthorIdListコンストラクタのtitle_and_abstract_searchに予期せぬ値:{title_and_abstract_search}")
+                    raise Exception(f"CreateAuthorIdListコンストラクタのtitle_and_abstract_searchに予期せぬ値:{title_and_abstract_search}")
+        
+            else:
+                print(f"CreateAuthorIdListコンストラクタのtitle_and_abstract_searchに予期せぬ値:{title_and_abstract_search}")
+                raise Exception(f"CreateAuthorIdListコンストラクタのtitle_and_abstract_searchに予期せぬ値:{title_and_abstract_search}")
         
         self.primary = primary
         self.researcher_rows=[]
@@ -123,7 +132,7 @@ if __name__ == "__main__":
     start_time = time.time()
     #'("novel target" OR "new target" OR "therapeutic target")'
     #["novel target","new target","therapeutic target"]                                                                                                                             
-    creater = CreateAuthorIdList(topic_ids=["T10966","T10966","T10966","T10966"],primary=True,threshold=10,year_threshold=2010,title_and_abstract_search='("novel target" OR "new target" OR "therapeutic target")' ,max_works=16)#("novel target" OR "new target" OR "therapeutic target")
+    creater = CreateAuthorIdList(topic_ids=["T10966","T10966","T10966","T10966"],primary=True,threshold=10,year_threshold=2010,title_and_abstract_search="novel target,new target,therapeutic target" ,max_works=16)#("novel target" OR "new target" OR "therapeutic target")
     creater.run_get_works()
     print(len(creater.all_results))
     print(len(creater.authors_id_list))
