@@ -17,16 +17,20 @@ def request_to_OpenAlex_instance(instance:str,data):
     else:
         print(f"入力されたインスタンスはありますん。:{instance}")
         return "faild"
-        
-    # POSTリクエストを送信して結果を確認
-    response = requests.post(url, json=data)
+    
+    try:   
+        # POSTリクエストを送信して結果を確認
+        response = requests.post(url, json=data ,timeout=10)
 
-    # レスポンスを表示
-    print("Status Code:", response.status_code)
-    print("Response Body:", response.json())
+        # レスポンスを表示
+        print("Status Code:", response.status_code)
+        print("Response Body:", response.json())
 
-    return {"status":response.status_code,"body":response.json()}
-
+        return {"status":response.status_code,"body":response.json()}
+    
+    except requests.exceptions.RequestException as e:
+        print("接続エラー:", e)
+        return {"status": "error", "error": str(e)}
     
 def control_ec2_instance(instance:str,action:str):
 
@@ -62,19 +66,19 @@ if __name__ == "__main__":
 
 
 
-    control_ec2_instance("core8","start")
-    # time.sleep(5)
-    # # 送信するデータ
-    # data = {
-    #     "author_info_source": "Example Source",
-    #     "topic_id": ["T10966"],  # リストとして修正
-    #     "primary": True,  # フィールドを追加
-    #     "citation_count": 20,  # 整数に修正
-    #     "publication_year": 2020,  # 整数に修正
-    #     "title_and_abstract_search": '("novel target" OR "new target" OR "therapeutic target")',  # フィールドを追加
-    #     "di_calculation": False,  # ブール値に修正
-    #     "output_sheet_name": "API動作確認"
-    # }
-    # request_to_OpenAlex_instance("core8",data)
+    #control_ec2_instance("core8","start")
+    # # time.sleep(5)
+    # 送信するデータ
+    data = {
+        "author_info_source": "Example Source",
+        "topic_id": ["T10966"],  # リストとして修正
+        "primary": True,  # フィールドを追加
+        "citation_count": 20,  # 整数に修正
+        "publication_year": 2020,  # 整数に修正
+        "title_and_abstract_search": '("novel target" OR "new target" OR "therapeutic target")',  # フィールドを追加
+        "di_calculation": False,  # ブール値に修正
+        "output_sheet_name": "API動作確認"
+    }
+    request_to_OpenAlex_instance("core8",data)
 
     

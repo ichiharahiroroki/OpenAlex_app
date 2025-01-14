@@ -114,7 +114,7 @@ class CreateAuthorIdList:
         
         # 各キーワードをクォートで囲み、ORで結合して括弧で囲む
         quoted_keywords = [f'"{keyword}"' for keyword in keywords]
-        return f"({" OR ".join(quoted_keywords)})"
+        return f"({' OR '.join(quoted_keywords)})"
     
 
 if __name__ == "__main__":
